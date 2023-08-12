@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { NODE_TYPE, getID, nodes, staticNodes } from "../nodes";
+import { nodes, staticNodes } from "../nodes";
 import { withStorageDOMEvents } from "./dom";
 
 function filterDiscoveredNodes(discoveredNodes: string[]) {
@@ -26,41 +26,28 @@ function filterDiscoveredNodes(discoveredNodes: string[]) {
             if (!(type in staticNodes)) {
               return null;
             }
-            const name = rest.split("-")[0];
-            if (!name) {
+            const [name, coords] = rest.replace("@", "").split("-") || [];
+            if (!name || !coords) {
               return null;
             }
+            const [x, y] = `-${coords}`.split(",").map(Number);
 
-            let node = (
+            const node = (
               staticNodes[
                 type as keyof typeof staticNodes
               ] as (typeof staticNodes)[keyof typeof staticNodes]
-            ).find(
-              (node) => ("name" in node && (node.name as string)) === name
-            );
+            ).find((node) => {
+              const distance = Math.sqrt(
+                Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2),
+              );
+              return distance < 0.1;
+            });
             if (!node) {
-              if (type === "dungeons") {
-                node = staticNodes.campaignDungeons.find(
-                  (node) => node.name === name
-                );
-                if (node) {
-                  return getID(node, "campaignDungeons");
-                }
-                node = staticNodes.sideQuestDungeons.find(
-                  (node) => node.name === name
-                );
-                if (node) {
-                  return getID(node, "sideQuestDungeons");
-                } else {
-                  return null;
-                }
-              } else {
-                return null;
-              }
+              return null;
             }
-            return getID(node, type as NODE_TYPE);
+            return node.id;
           })
-          .filter(Boolean) as string[]
+          .filter(Boolean) as string[],
       ),
     ];
   } catch (error) {
@@ -97,13 +84,13 @@ export const useDiscoveredNodesStore = create(
       merge: (persistentState: any, currentState) => {
         if (persistentState?.discoveredNodes) {
           persistentState.discoveredNodes = filterDiscoveredNodes(
-            persistentState.discoveredNodes
+            persistentState.discoveredNodes,
           );
         }
         return { ...currentState, ...persistentState };
       },
-    }
-  )
+    },
+  ),
 );
 
 withStorageDOMEvents(useDiscoveredNodesStore);

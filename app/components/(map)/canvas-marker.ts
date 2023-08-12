@@ -92,7 +92,6 @@ export type CanvasMarkerOptions = {
   id: string;
   type: string;
   attribute?: string;
-  aspect?: string;
   isHighlighted?: boolean;
   isDiscovered?: boolean;
   isAlternativeDiscoveredStyle?: boolean;
@@ -106,7 +105,7 @@ class CanvasMarker extends leaflet.CircleMarker {
 
   constructor(
     latLng: leaflet.LatLngExpression,
-    options: leaflet.CircleMarkerOptions & CanvasMarkerOptions
+    options: leaflet.CircleMarkerOptions & CanvasMarkerOptions,
   ) {
     options.renderer = renderer;
     super(latLng, options);
